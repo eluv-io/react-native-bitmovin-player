@@ -27,9 +27,13 @@ android {
     lintOptions {
         abortOnError false
     }
+    compileOptions {
+      sourceCompatibility JavaVersion.VERSION_1_8
+      targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
     implementation 'com.facebook.react:react-native:+'
-    implementation 'com.bitmovin.player:playercore:2.15.0'
+    implementation 'com.bitmovin.player:playercore:2.25.1'
 }

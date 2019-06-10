@@ -30,7 +30,12 @@ import com.bitmovin.player.api.event.listener.OnSeekListener;
 import com.bitmovin.player.api.event.listener.OnSeekedListener;
 import com.bitmovin.player.api.event.listener.OnFullscreenEnterListener;
 import com.bitmovin.player.api.event.listener.OnFullscreenExitListener;
-import com.bitmovin.player.config.PlayerConfiguration;
+import com.bitmovin.player.config.*;
+import com.bitmovin.player.config.network.*;
+import com.bitmovin.player.config.drm.*;
+import com.bitmovin.player.config.media.*;
+import com.bitmovin.player.UnsupportedDrmException;
+
 import com.bitmovin.player.BitmovinPlayer;
 import com.bitmovin.player.BitmovinPlayerView;
 import com.bitmovin.player.ui.FullscreenHandler;
@@ -46,6 +51,11 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 
 import java.util.Map;
+import org.json.JSONObject;
+import org.json.JSONException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerView> implements FullscreenHandler, LifecycleEventListener {
 
@@ -55,6 +65,8 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
     private BitmovinPlayer _player;
     private boolean _fullscreen;
     private ThemedReactContext _reactContext;
+    private ExecutorService executor
+          = Executors.newSingleThreadExecutor();
 
     @Override
     public String getName() {
@@ -164,6 +176,83 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
     }
 
     @ReactProp(name = "configuration")
+    public void setConfiguration(BitmovinPlayerView view, ReadableMap config) throws Exception{
+        JSONObject obj = JsonConvert.reactToJSON(config);
+        System.out.println(obj.toString());
+        //PlayerConfiguration configuration = new PlayerConfiguration();
+        //configuration.setSourceItem("https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd");
+        PlayerConfiguration configuration = PlayerConfiguration.fromJSON(obj.toString());
+        //System.out.println("Source title: " + configuration.getSourceItem());
+
+        ReadableMap sourceMap = null;
+        String token = "";
+        if (config.hasKey("Source")) {
+            sourceMap = config.getMap("Source");
+        }
+
+        ReadableMap networkMap = null;
+        if (config.hasKey("token")) {
+            token = config.getString("token");
+            final String auth = token;
+            //System.out.println("Config token: " + auth);
+            NetworkConfiguration networkConfig = new NetworkConfiguration();
+
+            // Does not work (read only)
+            PreprocessHttpRequestCallback callback = new PreprocessHttpRequestCallback(){
+                @Override
+                public Future<HttpRequest> preprocessHttpRequest(HttpRequestType type, HttpRequest request) {
+                  //System.out.println("PreprocessHttpRequestCallback: " + auth);
+                  return executor.submit(()-> {
+                      System.out.println("Network request adding auth: " + auth);
+                      Map<String,String> headers = request.getHeaders();
+                      headers.put("Authorization", auth);
+                      request.setHeaders(headers);
+                      return request;
+                  });
+              };
+          };
+
+          networkConfig.setPreprocessHttpRequestCallback(callback);
+          configuration.setNetworkConfiguration(networkConfig);
+          System.out.println("Added network config.");
+        }
+        _player.setup(configuration);
+
+        String sourceUrl = sourceMap.getString("dash");
+        SourceItem sourceItem = new SourceItem(sourceUrl);
+        SourceConfiguration sourceConfiguration = new SourceConfiguration();
+
+        ReadableMap drm = null;
+        if (sourceMap.hasKey("drm")) {
+            drm = sourceMap.getMap("drm");
+            //System.out.println("XXX -- has drm.");
+            if(drm.hasKey("widevine")){
+                //System.out.println("XXX -- has widevine.");
+                ReadableMap widevine = drm.getMap("widevine");
+                if(widevine.hasKey("LA_URL")) {
+                    String widevineUrl = widevine.getString("LA_URL");
+                    //System.out.println("Widevine url: " + widevineUrl);
+                    WidevineConfiguration widevineConfiguration =
+                            (WidevineConfiguration) new DRMConfiguration.Builder()
+                                    .uuid(WidevineConfiguration.UUID)
+                                    .licenseUrl(widevineUrl)
+                                    .putHttpHeader("Authorization", token)
+                                    .build();
+
+                    sourceItem.addDRMConfiguration(widevineConfiguration);
+                    System.out.println("Added widevine config.");
+            }
+          }
+        }
+
+        sourceConfiguration.addSourceItem(sourceItem);
+        System.out.println("Created configuration with sourceItem: " + sourceConfiguration.getFirstSourceItem().getDashSource().getUrl());
+        _player.load(sourceConfiguration);
+        System.out.println("Player setup.");
+    }
+
+/*
+    @ReactProp(name = "configuration")
     public void setConfiguration(BitmovinPlayerView view, ReadableMap config) {
         PlayerConfiguration configuration = new PlayerConfiguration();
 
@@ -226,6 +315,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
             _player.setup(configuration);
         }
     }
+*/
 
     @Override
     public boolean isFullScreen() {
@@ -377,6 +467,8 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 errorMap.putString("message", event.getMessage());
 
                 map.putMap("error", errorMap);
+
+                System.out.println("onError: " + event.getMessage());
 
                 _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                         _playerView.getId(),

@@ -24,7 +24,7 @@ const DEFAULT_CONFIGURATION = {
 class BitmovinPlayer extends React.Component {
   static propTypes = {
     style: ViewPropTypes.style,
-    configuration: PropTypes.shape({
+    /*configuration: PropTypes.shape({
       source: PropTypes.shape({
         title: PropTypes.string,
         url: PropTypes.string.isRequired,
@@ -41,8 +41,9 @@ class BitmovinPlayer extends React.Component {
         uiJs: PropTypes.string,
         fullscreenIcon: PropTypes.bool,
       }),
-    }).isRequired,
+    }).isRequired,*/
 
+    configuration: PropTypes.object,
     onReady: PropTypes.func,
     onPlay: PropTypes.func,
     onPaused: PropTypes.func,
