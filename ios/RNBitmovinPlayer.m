@@ -11,7 +11,7 @@
 
 - (void)dealloc {
     [_player destroy];
-    
+
     _player = nil;
     _playerView = nil;
 }
@@ -25,54 +25,66 @@
 
 - (void)setConfiguration:(NSDictionary *)config {
     BMPPlayerConfiguration *configuration = [BMPPlayerConfiguration new];
-    
-    if (!config[@"source"] || !config[@"source"][@"url"]) return;
-    
-    [configuration setSourceItemWithString:config[@"source"][@"url"] error:NULL];
-    
-    if (config[@"source"][@"title"]) {
-        configuration.sourceItem.itemTitle = config[@"source"][@"title"];
+    NSLog(@"RNBitmovinPlayer SetConfiguration");
+
+    NSDictionary *sourceDict = config[@"Source"];
+
+    if (!sourceDict || !(sourceDict[@"hls"] || sourceDict[@"dash"])) return;
+
+    NSString* sourceUrl = @"";
+    if(sourceDict[@"hls"]){
+      sourceUrl = sourceDict[@"hls"];
+    }else if(sourceDict[@"dash"]){
+      sourceUrl = sourceDict[@"dash"];
     }
-    
+
+    NSLog(@"Source url: %@", sourceUrl);
+
+    [configuration setSourceItemWithString:sourceUrl error:NULL];
+
+    if (sourceDict[@"title"]) {
+        configuration.sourceItem.itemTitle = sourceDict[@"title"];
+    }
+
     if (config[@"poster"] && config[@"poster"][@"url"]) {
         configuration.sourceItem.posterSource = [NSURL URLWithString:config[@"poster"][@"url"]];
         configuration.sourceItem.persistentPoster = [config[@"poster"][@"persistent"] boolValue];
     }
-    
+
     if (![config[@"style"][@"uiEnabled"] boolValue]) {
         configuration.styleConfiguration.uiEnabled = NO;
     }
-    
+
     if ([config[@"style"][@"systemUI"] boolValue]) {
         configuration.styleConfiguration.userInterfaceType = BMPUserInterfaceTypeSystem;
     }
-    
+
     if (config[@"style"][@"uiCss"]) {
         configuration.styleConfiguration.playerUiCss = [NSURL URLWithString:config[@"style"][@"uiCss"]];
     }
-    
+
     if (config[@"style"][@"supplementalUiCss"]) {
         configuration.styleConfiguration.supplementalPlayerUiCss = [NSURL URLWithString:config[@"style"][@"supplementalUiCss"]];
     }
-    
+
     if (config[@"style"][@"uiJs"]) {
         configuration.styleConfiguration.playerUiJs = [NSURL URLWithString:config[@"style"][@"uiJs"]];
     }
-    
+
     _player = [[BMPBitmovinPlayer alloc] initWithConfiguration:configuration];
-    
+
     [_player addPlayerListener:self];
-    
+
     _playerView = [[BMPBitmovinPlayerView alloc] initWithPlayer:_player frame:self.frame];
     _playerView.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
     _playerView.frame = self.bounds;
-    
+
     [_playerView addUserInterfaceListener:self];
 
     if ([config[@"style"][@"fullscreenIcon"] boolValue]) {
         _playerView.fullscreenHandler = self;
     }
-    
+
     [self addSubview:_playerView];
     [self bringSubviewToFront:_playerView];
 }
