@@ -216,9 +216,19 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
           configuration.setNetworkConfiguration(networkConfig);
           System.out.println("Added network config.");
         }
+        //TODO: source playback configurations
+        configuration.getPlaybackConfiguration().setAutoplayEnabled(true);
         _player.setup(configuration);
 
-        String sourceUrl = sourceMap.getString("dash");
+        String sourceUrl = "";
+        if(sourceMap.hasKey("dash")){
+          sourceUrl = sourceMap.getString("dash");
+        }else if(sourceMap.hasKey("hls")){
+          sourceUrl = sourceMap.getString("dash");
+        }else{
+          System.out.println("Could not find dash or hls in Source.");
+        }
+
         SourceItem sourceItem = new SourceItem(sourceUrl);
         SourceConfiguration sourceConfiguration = new SourceConfiguration();
 
@@ -236,7 +246,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                             (WidevineConfiguration) new DRMConfiguration.Builder()
                                     .uuid(WidevineConfiguration.UUID)
                                     .licenseUrl(widevineUrl)
-                                    .putHttpHeader("Authorization", token)
+                                    .putHttpHeader("Authorization", "Bearer " + token)
                                     .build();
 
                     sourceItem.addDRMConfiguration(widevineConfiguration);
