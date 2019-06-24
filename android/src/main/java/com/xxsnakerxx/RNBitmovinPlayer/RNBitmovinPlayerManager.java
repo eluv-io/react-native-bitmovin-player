@@ -56,6 +56,11 @@ import org.json.JSONException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import android.content.res.Resources;
+import android.net.Uri;
+import android.content.res.AssetManager;
 
 public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerView> implements FullscreenHandler, LifecycleEventListener {
 
@@ -193,6 +198,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         ReadableMap networkMap = null;
         if (config.hasKey("token")) {
             token = config.getString("token");
+            /*
             final String auth = token;
             //System.out.println("Config token: " + auth);
             NetworkConfiguration networkConfig = new NetworkConfiguration();
@@ -203,7 +209,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 public Future<HttpRequest> preprocessHttpRequest(HttpRequestType type, HttpRequest request) {
                   //System.out.println("PreprocessHttpRequestCallback: " + auth);
                   return executor.submit(()-> {
-                      System.out.println("Network request adding auth: " + auth);
+                      // System.out.println("Network request adding auth: " + auth);
                       Map<String,String> headers = request.getHeaders();
                       headers.put("Authorization", auth);
                       request.setHeaders(headers);
@@ -215,9 +221,33 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
           networkConfig.setPreprocessHttpRequestCallback(callback);
           configuration.setNetworkConfiguration(networkConfig);
           System.out.println("Added network config.");
+          */
         }
         //TODO: source playback configurations
         configuration.getPlaybackConfiguration().setAutoplayEnabled(true);
+
+        //Listing assets
+        final AssetManager assets = _reactContext.getBaseContext().getAssets();
+        final String[] names = assets.list( "" );
+
+        System.out.println("Assets: ");
+        for(int i = 0; i < names.length; i++){
+          System.out.println(names[i]);
+        }
+
+        configuration.getStyleConfiguration().setPlayerUiJs("file:///android_asset/bitmovinplayer-ui.js");
+        configuration.getStyleConfiguration().setPlayerUiCss("file:///android_asset/bitmovinplayer-ui.css");
+
+        if (config.hasKey("style")) {
+            ReadableMap styleMap = config.getMap("style");
+            if (styleMap.hasKey("uiEnabled") && !styleMap.getBoolean("uiEnabled")) {
+                configuration.getStyleConfiguration().setUiEnabled(false);
+            }
+            if (styleMap.hasKey("fullscreenIcon") && styleMap.getBoolean("fullscreenIcon")) {
+                _playerView.setFullscreenHandler(this);
+            }
+        }
+
         _player.setup(configuration);
 
         String sourceUrl = "";
