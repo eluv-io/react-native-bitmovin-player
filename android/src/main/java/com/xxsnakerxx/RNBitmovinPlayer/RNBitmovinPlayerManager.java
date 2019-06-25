@@ -235,8 +235,8 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
           System.out.println(names[i]);
         }
 
-        configuration.getStyleConfiguration().setPlayerUiJs("file:///android_asset/bitmovinplayer-ui.js");
-        configuration.getStyleConfiguration().setPlayerUiCss("file:///android_asset/bitmovinplayer-ui.css");
+        //configuration.getStyleConfiguration().setPlayerUiJs("file:///android_asset/bitmovinplayer-ui.js");
+        //configuration.getStyleConfiguration().setPlayerUiCss("file:///android_asset/bitmovinplayer-ui.css");
 
         if (config.hasKey("style")) {
             ReadableMap styleMap = config.getMap("style");
@@ -245,6 +245,17 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
             }
             if (styleMap.hasKey("fullscreenIcon") && styleMap.getBoolean("fullscreenIcon")) {
                 _playerView.setFullscreenHandler(this);
+            }
+            if (styleMap.hasKey("uiCss") && styleMap.getString("uiCss") != null) {
+                configuration.getStyleConfiguration().setPlayerUiCss("file:///android_asset/" + styleMap.getString("uiCss"));
+            }
+
+            if (styleMap.hasKey("supplementalUiCss") && styleMap.getString("supplementalUiCss") != null) {
+                configuration.getStyleConfiguration().setSupplementalPlayerUiCss("file:///android_asset/" + styleMap.getString("supplementalUiCss"));
+            }
+
+            if (styleMap.hasKey("uiJs") && styleMap.getString("uiJs") != null) {
+                configuration.getStyleConfiguration().setPlayerUiJs("file:///android_asset/" + styleMap.getString("uiJs"));
             }
         }
 

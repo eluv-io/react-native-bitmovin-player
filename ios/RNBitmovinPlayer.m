@@ -38,7 +38,7 @@
       sourceUrl = sourceDict[@"dash"];
     }
 
-    NSLog(@"Source url: %@", sourceUrl);
+    // NSLog(@"Source url: %@", sourceUrl);
 
     [configuration setSourceItemWithString:sourceUrl error:NULL];
 
@@ -60,16 +60,43 @@
     }
 
     if (config[@"style"][@"uiCss"]) {
-        configuration.styleConfiguration.playerUiCss = [NSURL URLWithString:config[@"style"][@"uiCss"]];
+        NSURL* url = [[NSBundle mainBundle] URLForResource:config[@"style"][@"uiCss"]
+                                                withExtension:NULL];
+        /*NSString* content = [NSString stringWithContentsOfFile:url
+                                        encoding:NSUTF8StringEncoding
+                                        error:NULL];
+        NSLog(@"CSS: url: %@, contents: \n%@",url, content);
+        */
+
+        configuration.styleConfiguration.playerUiCss = url;
     }
 
     if (config[@"style"][@"supplementalUiCss"]) {
-        configuration.styleConfiguration.supplementalPlayerUiCss = [NSURL URLWithString:config[@"style"][@"supplementalUiCss"]];
+        NSURL* url = [[NSBundle mainBundle] URLForResource:config[@"style"][@"supplementalUiCss"]
+                                                withExtension:NULL];
+        /*NSString* content = [NSString stringWithContentsOfFile:url
+                                        encoding:NSUTF8StringEncoding
+                                        error:NULL];
+        NSLog(@"supplementalUiCss: url: %@, contents: \n%@",url, content);
+        */
+
+        configuration.styleConfiguration.supplementalPlayerUiCss = url;
     }
 
     if (config[@"style"][@"uiJs"]) {
-        configuration.styleConfiguration.playerUiJs = [NSURL URLWithString:config[@"style"][@"uiJs"]];
+        NSURL* url = [[NSBundle mainBundle] URLForResource:config[@"style"][@"uiJs"]
+                                                withExtension:NULL];
+        /*NSString* content = [NSString stringWithContentsOfFile:url
+                                        encoding:NSUTF8StringEncoding
+                                        error:NULL];
+        NSLog(@"uiJs: url: %@, contents: \n%@",url, content);
+        */
+
+        configuration.styleConfiguration.supplementalPlayerUiCss = url;
     }
+
+    //TODO: playback configuration
+    configuration.playbackConfiguration.autoplayEnabled = true;
 
     _player = [[BMPBitmovinPlayer alloc] initWithConfiguration:configuration];
 
