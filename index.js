@@ -8,6 +8,7 @@ import {
   ViewPropTypes,
   requireNativeComponent,
   Platform,
+  Dimensions
 } from 'react-native';
 
 const RNBitmovinPlayerModule = NativeModules.RNBitmovinPlayer;
@@ -94,6 +95,7 @@ class BitmovinPlayer extends React.Component {
       onReady,
     } = this.props;
 
+/*
     // this need because video view stretched on initial render (RN 0.55.4)
     // TODO: check in future releases of RN
     if (Platform.OS === 'android') {
@@ -113,8 +115,34 @@ class BitmovinPlayer extends React.Component {
         },
       );
     }
-
+*/
     onReady();
+  }
+
+  _onFullscreenEnter = () => {
+    const {
+      onFullscreenEnter,
+    } = this.props;
+
+    let h = Dimensions.get("window").height;
+    // console.log("HEIGHT: " + h);
+    //this.setState({
+    //  maxHeight: h,
+    //});
+
+    if(onFullscreenEnter){
+      onFullscreenEnter();
+    }
+  }
+
+  _onFullscreenExit = () => {
+    const {
+      onFullscreenExit,
+    } = this.props;
+
+    if(onFullscreenExit){
+      onFullscreenExit();
+    }
   }
 
   play = () => {
@@ -175,6 +203,8 @@ class BitmovinPlayer extends React.Component {
       configuration,
     } = this.props;
 
+    // console.log("From ANDROID render() " + JSON.stringify(this.props));
+
     const {
       maxHeight,
     } = this.state;
@@ -184,21 +214,22 @@ class BitmovinPlayer extends React.Component {
         {...this.props}
         ref={this._setRef}
         onReady={this._onReady}
+        onFullscreenEnter={this._onFullscreenEnter}
+        onFullscreenExit={this._onFullscreenExit}
         configuration={{
           ...DEFAULT_CONFIGURATION,
           ...configuration,
         }}
+        /*
         style={[
-          maxHeight
-            ? {
-              maxHeight,
-            }
-            : null,
+          style,
+          //maxHeight? {height: maxHeight,} : null,
           {
             backgroundColor: 'black',
           },
-          style,
         ]}
+        */
+        style={style}
       />
     );
   }

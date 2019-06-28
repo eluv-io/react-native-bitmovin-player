@@ -39,6 +39,7 @@ import com.bitmovin.player.UnsupportedDrmException;
 import com.bitmovin.player.BitmovinPlayer;
 import com.bitmovin.player.BitmovinPlayerView;
 import com.bitmovin.player.ui.FullscreenHandler;
+import com.bitmovin.player.ui.FullscreenUtil;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
@@ -61,6 +62,17 @@ import java.nio.charset.StandardCharsets;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.content.res.AssetManager;
+import android.app.Activity;
+import android.content.pm.ActivityInfo;
+import android.os.Looper;
+import android.os.Handler;
+import android.view.Surface;
+import android.view.View;
+import android.view.ViewGroup;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.annotation.SuppressLint;
 
 public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerView> implements FullscreenHandler, LifecycleEventListener {
 
@@ -72,6 +84,8 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
     private ThemedReactContext _reactContext;
     private ExecutorService executor
           = Executors.newSingleThreadExecutor();
+    private Activity _activity;
+    private View _decorView;
 
     @Override
     public String getName() {
@@ -151,10 +165,10 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                                 "phasedRegistrationNames",
                                 MapBuilder.of("bubbled", "onFullscreenEnter")))
                 .put(
-                        "_onFullscreenExit",
+                        "onFullscreenExit",
                         MapBuilder.of(
                                 "phasedRegistrationNames",
-                                MapBuilder.of("bubbled", "_onFullscreenExit")))
+                                MapBuilder.of("bubbled", "onFullscreenExit")))
                 .build();
     }
 
@@ -164,6 +178,8 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         _playerView = new BitmovinPlayerView(context);
         _player = _playerView.getPlayer();
         _fullscreen = false;
+        _activity = _reactContext.getCurrentActivity();
+        _decorView = _activity.getWindow().getDecorView();
 
         setListeners();
 
@@ -183,50 +199,35 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
     @ReactProp(name = "configuration")
     public void setConfiguration(BitmovinPlayerView view, ReadableMap config) throws Exception{
         JSONObject obj = JsonConvert.reactToJSON(config);
-        System.out.println(obj.toString());
-        //PlayerConfiguration configuration = new PlayerConfiguration();
-        //configuration.setSourceItem("https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd");
         PlayerConfiguration configuration = PlayerConfiguration.fromJSON(obj.toString());
-        //System.out.println("Source title: " + configuration.getSourceItem());
 
         ReadableMap sourceMap = null;
         String token = "";
         if (config.hasKey("Source")) {
             sourceMap = config.getMap("Source");
+        }else{
+          return;
+        }
+
+        String sourceUrl = "";
+        if(sourceMap.hasKey("dash")){
+          sourceUrl = sourceMap.getString("dash");
+        }else if(sourceMap.hasKey("hls")){
+          sourceUrl = sourceMap.getString("dash");
+        }else{
+          System.out.println("Could not find dash or hls in Source.");
+          return;
         }
 
         ReadableMap networkMap = null;
         if (config.hasKey("token")) {
             token = config.getString("token");
-            /*
-            final String auth = token;
-            //System.out.println("Config token: " + auth);
-            NetworkConfiguration networkConfig = new NetworkConfiguration();
-
-            // Does not work (read only)
-            PreprocessHttpRequestCallback callback = new PreprocessHttpRequestCallback(){
-                @Override
-                public Future<HttpRequest> preprocessHttpRequest(HttpRequestType type, HttpRequest request) {
-                  //System.out.println("PreprocessHttpRequestCallback: " + auth);
-                  return executor.submit(()-> {
-                      // System.out.println("Network request adding auth: " + auth);
-                      Map<String,String> headers = request.getHeaders();
-                      headers.put("Authorization", auth);
-                      request.setHeaders(headers);
-                      return request;
-                  });
-              };
-          };
-
-          networkConfig.setPreprocessHttpRequestCallback(callback);
-          configuration.setNetworkConfiguration(networkConfig);
-          System.out.println("Added network config.");
-          */
         }
         //TODO: source playback configurations
         configuration.getPlaybackConfiguration().setAutoplayEnabled(true);
 
         //Listing assets
+        /*
         final AssetManager assets = _reactContext.getBaseContext().getAssets();
         final String[] names = assets.list( "" );
 
@@ -234,9 +235,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         for(int i = 0; i < names.length; i++){
           System.out.println(names[i]);
         }
-
-        //configuration.getStyleConfiguration().setPlayerUiJs("file:///android_asset/bitmovinplayer-ui.js");
-        //configuration.getStyleConfiguration().setPlayerUiCss("file:///android_asset/bitmovinplayer-ui.css");
+        */
 
         if (config.hasKey("style")) {
             ReadableMap styleMap = config.getMap("style");
@@ -260,18 +259,13 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         }
 
         _player.setup(configuration);
-
-        String sourceUrl = "";
-        if(sourceMap.hasKey("dash")){
-          sourceUrl = sourceMap.getString("dash");
-        }else if(sourceMap.hasKey("hls")){
-          sourceUrl = sourceMap.getString("dash");
-        }else{
-          System.out.println("Could not find dash or hls in Source.");
-        }
-
-        SourceItem sourceItem = new SourceItem(sourceUrl);
+        SourceItem sourceItem =  new SourceItem(sourceUrl);
         SourceConfiguration sourceConfiguration = new SourceConfiguration();
+
+        if(sourceMap.hasKey("poster")){
+          String poster = sourceMap.getString("poster");
+          sourceItem.setPosterSource(poster);
+        }
 
         ReadableMap drm = null;
         if (sourceMap.hasKey("drm")) {
@@ -283,11 +277,19 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 if(widevine.hasKey("LA_URL")) {
                     String widevineUrl = widevine.getString("LA_URL");
                     //System.out.println("Widevine url: " + widevineUrl);
+                    if(widevine.hasKey("headers")){
+                      ReadableMap headers = widevine.getMap("headers");
+                      if(headers.hasKey("Authorization")){
+                        token = headers.getString("Authorization");
+                        //System.out.println("XXX -- proxy token: " + token);
+                      }
+                    }
+
                     WidevineConfiguration widevineConfiguration =
                             (WidevineConfiguration) new DRMConfiguration.Builder()
                                     .uuid(WidevineConfiguration.UUID)
                                     .licenseUrl(widevineUrl)
-                                    .putHttpHeader("Authorization", "Bearer " + token)
+                                    .putHttpHeader("Authorization", token)
                                     .build();
 
                     sourceItem.addDRMConfiguration(widevineConfiguration);
@@ -297,76 +299,98 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         }
 
         sourceConfiguration.addSourceItem(sourceItem);
-        System.out.println("Created configuration with sourceItem: " + sourceConfiguration.getFirstSourceItem().getDashSource().getUrl());
+        //System.out.println("Created configuration with sourceItem: " + sourceConfiguration.getFirstSourceItem().getDashSource().getUrl());
         _player.load(sourceConfiguration);
-        System.out.println("Player setup.");
+        //System.out.println("Player setup.");
     }
 
-/*
-    @ReactProp(name = "configuration")
-    public void setConfiguration(BitmovinPlayerView view, ReadableMap config) {
-        PlayerConfiguration configuration = new PlayerConfiguration();
+    private void handleFullscreen(boolean fullscreen)
+    {
+        System.out.println("XXX: handleFullscreen. " + fullscreen);
+        this._fullscreen = fullscreen;
+        // this.doRotation(fullscreen);
+        this.doSystemUiVisibility(fullscreen);
+        this.doLayoutChanges(fullscreen);
+    }
 
-        ReadableMap sourceMap = null;
-        ReadableMap posterMap = null;
-        ReadableMap styleMap = null;
+    private void doRotation(boolean fullScreen)
+    {
+        int rotation = this._activity.getWindowManager().getDefaultDisplay().getRotation();
 
-        if (config.hasKey("source")) {
-            sourceMap = config.getMap("source");
+        if (fullScreen)
+        {
+            System.out.println("XXX: doRotation fullscreen.");
+            switch (rotation)
+            {
+                case Surface.ROTATION_270:
+                    this._activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                    break;
+
+                default:
+                    this._activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            }
         }
-
-        if (sourceMap != null && sourceMap.getString("url") != null) {
-            configuration.setSourceItem(sourceMap.getString("url"));
-
-            if (sourceMap.getString("title") != null) {
-                configuration.getSourceItem().setTitle(sourceMap.getString("title"));
-            }
-
-            if (config.hasKey("poster")) {
-                posterMap = config.getMap("poster");
-            }
-
-            if (posterMap != null && posterMap.getString("url") != null) {
-                boolean persistent = false;
-
-                if (posterMap.hasKey("persistent")) {
-                    persistent = posterMap.getBoolean("persistent");
-                }
-
-                configuration.getSourceItem()
-                        .setPosterImage(posterMap.getString("url"), persistent);
-            }
-
-            if (config.hasKey("style")) {
-                styleMap = config.getMap("style");
-            }
-
-            if (styleMap != null) {
-                if (styleMap.hasKey("uiEnabled") && !styleMap.getBoolean("uiEnabled")) {
-                    configuration.getStyleConfiguration().setUiEnabled(false);
-                }
-
-                if (styleMap.hasKey("uiCss") && styleMap.getString("uiCss") != null) {
-                    configuration.getStyleConfiguration().setPlayerUiCss(styleMap.getString("uiCss"));
-                }
-
-                if (styleMap.hasKey("supplementalUiCss") && styleMap.getString("supplementalUiCss") != null) {
-                    configuration.getStyleConfiguration().setSupplementalPlayerUiCss(styleMap.getString("supplementalUiCss"));
-                }
-
-                if (styleMap.hasKey("uiJs") && styleMap.getString("uiJs") != null) {
-                    configuration.getStyleConfiguration().setPlayerUiJs(styleMap.getString("uiJs"));
-                }
-
-                if (styleMap.hasKey("fullscreenIcon") && styleMap.getBoolean("fullscreenIcon")) {
-                    _playerView.setFullscreenHandler(this);
-                }
-            }
-
-            _player.setup(configuration);
+        else
+        {
+            System.out.println("XXX: doRotation no fullscreen.");
+            this._activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
     }
-*/
+
+    private void doSystemUiVisibility(final boolean fullScreen)
+    {
+        this._decorView.post(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                int uiParams = FullscreenUtil.getSystemUiVisibilityFlags(fullScreen, true);
+                _decorView.setSystemUiVisibility(uiParams);
+                /*
+                if(fullScreen){
+                  System.out.println("XXX: doSystemUiVisibility fullscreen.");
+                  _decorView.setSystemUiVisibility(
+                            View.SYSTEM_UI_FLAG_IMMERSIVE
+                            // Set the content to appear under the system bars so that the
+                            // content doesn't resize when the system bars hide and show.
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE
+                            // Hide the nav bar and status bar
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN);
+               }else{
+                  System.out.println("XXX: doSystemUiVisibility not fullscreen.");
+                  _decorView.setSystemUiVisibility(
+                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+               }
+               */
+            }
+        });
+    }
+
+    private void doLayoutChanges(final boolean fullscreen)
+    {
+        // System.out.println("XXX: doLayoutChanges.");
+        Looper mainLooper = Looper.getMainLooper();
+        boolean isMainLooperAlready = Looper.myLooper() == mainLooper;
+
+
+        UpdateLayoutRunnable updateLayoutRunnable = new UpdateLayoutRunnable(this._activity, fullscreen);
+
+        if (isMainLooperAlready)
+        {
+            updateLayoutRunnable.run();
+        }
+        else
+        {
+            Handler handler = new Handler(mainLooper);
+            handler.post(updateLayoutRunnable);
+        }
+    }
 
     @Override
     public boolean isFullScreen() {
@@ -382,14 +406,25 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
     @Override
     public void onDestroy() {}
 
+    private void triggerEvent(String eventName, WritableMap data) {
+        _reactContext.getJSModule(RCTEventEmitter.class)
+            .receiveEvent(_playerView.getId(), eventName, data);
+    }
+
     @Override
     public void onFullscreenRequested() {
-        _fullscreen = true;
+        System.out.println("onFullscreenRequested");
+        this.handleFullscreen(true);
+        WritableMap map = Arguments.createMap();
+        triggerEvent("onFullscreenEnter",map);
     }
 
     @Override
     public void onFullscreenExitRequested() {
-        _fullscreen = false;
+        System.out.println("onFullscreenExitRequested");
+        this.handleFullscreen(false);
+        WritableMap map = Arguments.createMap();
+        triggerEvent("onFullscreenExit",map);
     }
 
     @Override
@@ -411,11 +446,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         _player.addEventListener(new OnReadyListener() {
             public void onReady(ReadyEvent event) {
                 WritableMap map = Arguments.createMap();
-
-                _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-                        _playerView.getId(),
-                        "onReady",
-                        map);
+                triggerEvent("onReady",map);
             }
         });
 
@@ -424,11 +455,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 WritableMap map = Arguments.createMap();
 
                 map.putDouble("time", event.getTime());
-
-                _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-                        _playerView.getId(),
-                        "onPlay",
-                        map);
+                triggerEvent("onPlay",map);
             }
         });
 
@@ -438,11 +465,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 WritableMap map = Arguments.createMap();
 
                 map.putDouble("time", event.getTime());
-
-                _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-                        _playerView.getId(),
-                        "onPaused",
-                        map);
+                triggerEvent("onPaused",map);
             }
         });
 
@@ -452,11 +475,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 WritableMap map = Arguments.createMap();
 
                 map.putDouble("time", event.getTime());
-
-                _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-                        _playerView.getId(),
-                        "onTimeChanged",
-                        map);
+                triggerEvent("onTimeChanged",map);
             }
         });
 
@@ -464,11 +483,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
             @Override
             public void onStallStarted(StallStartedEvent event) {
                 WritableMap map = Arguments.createMap();
-
-                _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-                        _playerView.getId(),
-                        "onStallStarted",
-                        map);
+                triggerEvent("onStallStarted",map);
             }
         });
 
@@ -582,6 +597,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         _player.addEventListener(new OnFullscreenEnterListener() {
             @Override
             public void onFullscreenEnter(FullscreenEnterEvent event) {
+                System.out.println("XXX: ANDROID fullscreen event.");
                 WritableMap map = Arguments.createMap();
 
                 _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
@@ -602,5 +618,50 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                         map);
             }
         });
+    }
+
+    private class UpdateLayoutRunnable implements Runnable
+    {
+        private Activity activity;
+        private boolean fullscreen;
+
+        private UpdateLayoutRunnable(Activity activity, boolean fullscreen)
+        {
+            this.activity = activity;
+            this.fullscreen = fullscreen;
+        }
+
+        @Override
+        @SuppressLint("RestrictedApi")
+        public void run()
+        {
+          /*
+            if (RNBitmovinPlayerManager.this.toolbar != null)
+            {
+                if (this.fullscreen)
+                {
+                    RNBitmovinPlayerManager.this.toolbar.setVisibility(View.GONE);
+                }
+                else
+                {
+                    RNBitmovinPlayerManager.this.toolbar.setVisibility(View.VISIBLE);
+                }
+            }
+            */
+
+            if (RNBitmovinPlayerManager.this._playerView.getParent() instanceof ViewGroup)
+            {
+                ViewGroup parentView = (ViewGroup) RNBitmovinPlayerManager.this._playerView.getParent();
+
+                for (int i = 0; i < parentView.getChildCount(); i++)
+                {
+                    View child = parentView.getChildAt(i);
+                    if (child != _playerView)
+                    {
+                        child.setVisibility(fullscreen ? View.GONE : View.VISIBLE);
+                    }
+                }
+            }
+        }
     }
 }
