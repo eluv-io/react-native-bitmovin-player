@@ -124,7 +124,7 @@ class BitmovinPlayer extends React.Component {
       onFullscreenEnter,
     } = this.props;
 
-    let h = Dimensions.get("window").height;
+    // let h = Dimensions.get("window").height;
     // console.log("HEIGHT: " + h);
     //this.setState({
     //  maxHeight: h,
@@ -146,54 +146,128 @@ class BitmovinPlayer extends React.Component {
   }
 
   play = () => {
-    RNBitmovinPlayerModule.play(findNodeHandle(this._player));
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.play(player);
   }
 
   pause = () => {
-    RNBitmovinPlayerModule.pause(findNodeHandle(this._player));
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.pause(player);
   }
 
   seek = (time = 0) => {
     const seekTime = parseFloat(time);
 
     if (seekTime) {
-      RNBitmovinPlayerModule.seek(findNodeHandle(this._player), seekTime);
+      let player = findNodeHandle(this._player);
+      if(!player){
+        return;
+      }
+      RNBitmovinPlayerModule.seek(player, seekTime);
     }
   }
 
   mute = () => {
-    RNBitmovinPlayerModule.mute(findNodeHandle(this._player));
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.mute(player);
   }
 
   unmute = () => {
-    RNBitmovinPlayerModule.unmute(findNodeHandle(this._player));
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.unmute(player);
   }
 
   enterFullscreen = () => {
-    RNBitmovinPlayerModule.enterFullscreen(findNodeHandle(this._player));
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.enterFullscreen(player);
   }
 
   exitFullscreen = () => {
-    RNBitmovinPlayerModule.exitFullscreen(findNodeHandle(this._player));
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.exitFullscreen(player);
   }
 
-  getCurrentTime = () => RNBitmovinPlayerModule.getCurrentTime(findNodeHandle(this._player))
+  getCurrentTime = () => {
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.getCurrentTime(player);
+  }
 
-  getDuration = () => RNBitmovinPlayerModule.getDuration(findNodeHandle(this._player))
+  getDuration = () => {
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.getDuration(player);
+  }
 
-  getVolume = () => RNBitmovinPlayerModule.getVolume(findNodeHandle(this._player))
+  getVolume = () => {
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.getVolume(player);
+  }
 
   setVolume = (volume = 100) => {
-    RNBitmovinPlayerModule.setVolume(findNodeHandle(this._player), volume);
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.setVolume(player, volume);
   }
 
-  isMuted = () => RNBitmovinPlayerModule.isMuted(findNodeHandle(this._player))
+  isMuted = () => {
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.isMuted(player);
+  }
 
-  isPaused = () => RNBitmovinPlayerModule.isPaused(findNodeHandle(this._player))
+  isPaused = () => {
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.isPaused(player);
+  }
 
-  isStalled = () => RNBitmovinPlayerModule.isStalled(findNodeHandle(this._player))
+  isStalled = () => {
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.isStalled(player);
+  }
 
-  isPlaying = () => RNBitmovinPlayerModule.isPlaying(findNodeHandle(this._player))
+  isPlaying = () => {
+    let player = findNodeHandle(this._player);
+    if(!player){
+      return;
+    }
+    RNBitmovinPlayerModule.isPlaying(player);
+  }
 
   _setRef = (ref) => { this._player = ref; }
 
