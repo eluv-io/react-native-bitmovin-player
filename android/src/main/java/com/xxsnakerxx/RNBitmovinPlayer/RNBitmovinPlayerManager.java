@@ -276,12 +276,12 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 ReadableMap widevine = drm.getMap("widevine");
                 if(widevine.hasKey("LA_URL")) {
                     String widevineUrl = widevine.getString("LA_URL");
-                    //System.out.println("Widevine url: " + widevineUrl);
+                    // System.out.println("Widevine url: " + widevineUrl);
                     if(widevine.hasKey("headers")){
                       ReadableMap headers = widevine.getMap("headers");
                       if(headers.hasKey("Authorization")){
                         token = headers.getString("Authorization");
-                        //System.out.println("XXX -- proxy token: " + token);
+                        // System.out.println("XXX -- proxy token: " + token);
                       }
                     }
 
@@ -299,16 +299,16 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         }
 
         sourceConfiguration.addSourceItem(sourceItem);
-        //System.out.println("Created configuration with sourceItem: " + sourceConfiguration.getFirstSourceItem().getDashSource().getUrl());
+        // System.out.println("Created configuration with sourceItem: " + sourceConfiguration.getFirstSourceItem().getDashSource().getUrl());
         _player.load(sourceConfiguration);
+        //On by default for certain android. Disables by default.
         //System.out.println("Player setup.");
     }
 
     private void handleFullscreen(boolean fullscreen)
     {
-        System.out.println("XXX: handleFullscreen. " + fullscreen);
+        // System.out.println("XXX: handleFullscreen. " + fullscreen);
         this._fullscreen = fullscreen;
-        // this.doRotation(fullscreen);
         this.doSystemUiVisibility(fullscreen);
         this.doLayoutChanges(fullscreen);
     }
@@ -319,7 +319,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
 
         if (fullScreen)
         {
-            System.out.println("XXX: doRotation fullscreen.");
+            // System.out.println("XXX: doRotation fullscreen.");
             switch (rotation)
             {
                 case Surface.ROTATION_270:
@@ -332,7 +332,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         }
         else
         {
-            System.out.println("XXX: doRotation no fullscreen.");
+            // System.out.println("XXX: doRotation no fullscreen.");
             this._activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
     }
@@ -346,28 +346,6 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
             {
                 int uiParams = FullscreenUtil.getSystemUiVisibilityFlags(fullScreen, true);
                 _decorView.setSystemUiVisibility(uiParams);
-                /*
-                if(fullScreen){
-                  System.out.println("XXX: doSystemUiVisibility fullscreen.");
-                  _decorView.setSystemUiVisibility(
-                            View.SYSTEM_UI_FLAG_IMMERSIVE
-                            // Set the content to appear under the system bars so that the
-                            // content doesn't resize when the system bars hide and show.
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_IMMERSIVE
-                            // Hide the nav bar and status bar
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN);
-               }else{
-                  System.out.println("XXX: doSystemUiVisibility not fullscreen.");
-                  _decorView.setSystemUiVisibility(
-                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-               }
-               */
             }
         });
     }
