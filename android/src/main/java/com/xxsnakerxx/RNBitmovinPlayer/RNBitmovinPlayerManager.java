@@ -34,6 +34,7 @@ import com.bitmovin.player.config.*;
 import com.bitmovin.player.config.network.*;
 import com.bitmovin.player.config.drm.*;
 import com.bitmovin.player.config.media.*;
+import com.bitmovin.player.config.track.*;
 import com.bitmovin.player.UnsupportedDrmException;
 
 import com.bitmovin.player.BitmovinPlayer;
@@ -301,8 +302,6 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         sourceConfiguration.addSourceItem(sourceItem);
         // System.out.println("Created configuration with sourceItem: " + sourceConfiguration.getFirstSourceItem().getDashSource().getUrl());
         _player.load(sourceConfiguration);
-        //On by default for certain android. Disables by default.
-        //System.out.println("Player setup.");
     }
 
     private void handleFullscreen(boolean fullscreen)
@@ -391,7 +390,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
 
     @Override
     public void onFullscreenRequested() {
-        System.out.println("onFullscreenRequested");
+        // System.out.println("onFullscreenRequested");
         this.handleFullscreen(true);
         WritableMap map = Arguments.createMap();
         triggerEvent("onFullscreenEnter",map);
@@ -399,7 +398,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
 
     @Override
     public void onFullscreenExitRequested() {
-        System.out.println("onFullscreenExitRequested");
+        // System.out.println("onFullscreenExitRequested");
         this.handleFullscreen(false);
         WritableMap map = Arguments.createMap();
         triggerEvent("onFullscreenExit",map);
@@ -441,8 +440,6 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
             @Override
             public void onPaused(PausedEvent event) {
                 WritableMap map = Arguments.createMap();
-
-                map.putDouble("time", event.getTime());
                 triggerEvent("onPaused",map);
             }
         });
