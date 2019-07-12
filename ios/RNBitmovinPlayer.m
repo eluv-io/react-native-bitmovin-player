@@ -46,9 +46,9 @@
         configuration.sourceItem.itemTitle = sourceDict[@"title"];
     }
 
-    if (config[@"poster"] && config[@"poster"][@"url"]) {
-        configuration.sourceItem.posterSource = [NSURL URLWithString:config[@"poster"][@"url"]];
-        configuration.sourceItem.persistentPoster = [config[@"poster"][@"persistent"] boolValue];
+    if (sourceDict[@"poster"]) {
+        configuration.sourceItem.posterSource = [NSURL URLWithString:sourceDict[@"poster"]];
+        //configuration.sourceItem.persistentPoster = [config[@"poster"][@"persistent"] boolValue];
     }
 
     if (![config[@"style"][@"uiEnabled"] boolValue]) {
@@ -95,8 +95,14 @@
         configuration.styleConfiguration.supplementalPlayerUiCss = url;
     }
 
-    //TODO: playback configuration
-    configuration.playbackConfiguration.autoplayEnabled = true;
+
+    if (sourceDict[@"playback"] && sourceDict[@"playback"][@"autoplay"]) {
+        if([sourceDict[@"playback"][@"autoplay"] boolValue]){
+            configuration.playbackConfiguration.autoplayEnabled = true;
+        }
+    }
+
+
 
     _player = [[BMPBitmovinPlayer alloc] initWithConfiguration:configuration];
 

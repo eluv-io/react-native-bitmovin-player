@@ -1,35 +1,7 @@
 package com.xxsnakerxx.RNBitmovinPlayer;
 
-import com.bitmovin.player.api.event.data.ErrorEvent;
-import com.bitmovin.player.api.event.data.FullscreenEnterEvent;
-import com.bitmovin.player.api.event.data.FullscreenExitEvent;
-import com.bitmovin.player.api.event.data.MutedEvent;
-import com.bitmovin.player.api.event.data.PausedEvent;
-import com.bitmovin.player.api.event.data.PlayEvent;
-import com.bitmovin.player.api.event.data.PlaybackFinishedEvent;
-import com.bitmovin.player.api.event.data.ReadyEvent;
-import com.bitmovin.player.api.event.data.RenderFirstFrameEvent;
-import com.bitmovin.player.api.event.data.SeekEvent;
-import com.bitmovin.player.api.event.data.SeekedEvent;
-import com.bitmovin.player.api.event.data.StallEndedEvent;
-import com.bitmovin.player.api.event.data.StallStartedEvent;
-import com.bitmovin.player.api.event.data.TimeChangedEvent;
-import com.bitmovin.player.api.event.data.UnmutedEvent;
-import com.bitmovin.player.api.event.listener.OnReadyListener;
-import com.bitmovin.player.api.event.listener.OnPlayListener;
-import com.bitmovin.player.api.event.listener.OnPausedListener;
-import com.bitmovin.player.api.event.listener.OnTimeChangedListener;
-import com.bitmovin.player.api.event.listener.OnStallStartedListener;
-import com.bitmovin.player.api.event.listener.OnStallEndedListener;
-import com.bitmovin.player.api.event.listener.OnPlaybackFinishedListener;
-import com.bitmovin.player.api.event.listener.OnRenderFirstFrameListener;
-import com.bitmovin.player.api.event.listener.OnErrorListener;
-import com.bitmovin.player.api.event.listener.OnMutedListener;
-import com.bitmovin.player.api.event.listener.OnUnmutedListener;
-import com.bitmovin.player.api.event.listener.OnSeekListener;
-import com.bitmovin.player.api.event.listener.OnSeekedListener;
-import com.bitmovin.player.api.event.listener.OnFullscreenEnterListener;
-import com.bitmovin.player.api.event.listener.OnFullscreenExitListener;
+import com.bitmovin.player.api.event.data.*;
+import com.bitmovin.player.api.event.listener.*;
 import com.bitmovin.player.config.*;
 import com.bitmovin.player.config.network.*;
 import com.bitmovin.player.config.drm.*;
@@ -224,8 +196,18 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         if (config.hasKey("token")) {
             token = config.getString("token");
         }
-        //TODO: source playback configurations
-        configuration.getPlaybackConfiguration().setAutoplayEnabled(true);
+
+        if (sourceMap.hasKey("playback")) {
+          ReadableMap playbackMap = sourceMap.getMap("playback");
+          if(playbackMap.hasKey("autoplay")){
+            Boolean autoplay = playbackMap.getBoolean("autoplay");
+            if(autoplay){
+              System.out.println("XXX: Autoplay");
+              configuration.getPlaybackConfiguration().setAutoplayEnabled(true);
+            }
+          }
+        }
+
 
         //Listing assets
         /*
@@ -593,6 +575,41 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                         map);
             }
         });
+
+        _player.addEventListener(new OnSubtitleChangedListener() {
+            @Override
+            public void onSubtitleChanged(SubtitleChangedEvent event) {
+                System.out.println("XXX: EVENT: SubtitleChangedEvent");
+                if(_player.getSubtitle() != null){
+                  System.out.println("Current Subtitle id: " + _player.getSubtitle().getId());
+                  System.out.println("Current Subtitle label: " + _player.getSubtitle().getLabel());
+                  System.out.println("Current Subtitle type: " + _player.getSubtitle().getType());
+                }else{
+                  System.out.println("Subtitles turned off.");
+                }
+            }
+        });
+
+        _player.addEventListener(new OnSubtitleAddedListener() {
+            @Override
+            public void onSubtitleAdded(SubtitleAddedEvent event) {
+                System.out.println("XXX: EVENT: SubtitleAddedEvent");
+                System.out.println("Current Subtitle id: " + event.getSubtitleTrack().getId());
+                System.out.println("Current Subtitle label: " + event.getSubtitleTrack().getLabel());
+                System.out.println("Current Subtitle type: " + event.getSubtitleTrack().getType());
+            }
+        });
+
+        _player.addEventListener(new OnSubtitleRemovedListener() {
+            @Override
+            public void onSubtitleRemoved(SubtitleRemovedEvent event) {
+                System.out.println("XXX: EVENT: onSubtitleRemoved");
+                System.out.println("Current Subtitle id: " + event.getSubtitleTrack().getId());
+                System.out.println("Current Subtitle label: " + event.getSubtitleTrack().getLabel());
+                System.out.println("Current Subtitle type: " + event.getSubtitleTrack().getType());
+            }
+        });
+
     }
 
     private class UpdateLayoutRunnable implements Runnable
