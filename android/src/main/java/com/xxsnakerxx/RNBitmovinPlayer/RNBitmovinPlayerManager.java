@@ -202,12 +202,10 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
           if(playbackMap.hasKey("autoplay")){
             Boolean autoplay = playbackMap.getBoolean("autoplay");
             if(autoplay){
-              System.out.println("XXX: Autoplay");
               configuration.getPlaybackConfiguration().setAutoplayEnabled(true);
             }
           }
         }
-
 
         //Listing assets
         /*
@@ -554,7 +552,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
         _player.addEventListener(new OnFullscreenEnterListener() {
             @Override
             public void onFullscreenEnter(FullscreenEnterEvent event) {
-                System.out.println("XXX: ANDROID fullscreen event.");
+                // System.out.println("XXX: ANDROID fullscreen event.");
                 WritableMap map = Arguments.createMap();
 
                 _reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
@@ -575,7 +573,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                         map);
             }
         });
-
+/*
         _player.addEventListener(new OnSubtitleChangedListener() {
             @Override
             public void onSubtitleChanged(SubtitleChangedEvent event) {
@@ -609,7 +607,7 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
                 System.out.println("Current Subtitle type: " + event.getSubtitleTrack().getType());
             }
         });
-
+*/
     }
 
     private class UpdateLayoutRunnable implements Runnable
