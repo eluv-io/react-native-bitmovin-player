@@ -92,7 +92,7 @@
         NSLog(@"uiJs: url: %@, contents: \n%@",url, content);
         */
 
-        configuration.styleConfiguration.supplementalPlayerUiCss = url;
+        configuration.styleConfiguration.playerUiJs = url;
     }
 
 
