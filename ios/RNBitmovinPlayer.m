@@ -25,8 +25,7 @@
 
 - (void)setConfiguration:(NSDictionary *)config {
     BMPPlayerConfiguration *configuration = [BMPPlayerConfiguration new];
-    NSLog(@"RNBitmovinPlayer SetConfiguration");
-
+    
     NSDictionary *sourceDict = config[@"Source"];
 
     if (!sourceDict || !(sourceDict[@"hls"] || sourceDict[@"dash"])) return;
@@ -37,8 +36,7 @@
     }else if(sourceDict[@"dash"]){
       sourceUrl = sourceDict[@"dash"];
     }
-
-    // NSLog(@"Source url: %@", sourceUrl);
+    NSLog(@"RNBitmovinPlayer.setConfiguration - sourceUrl=%@", sourceUrl);
 
     [configuration setSourceItemWithString:sourceUrl error:NULL];
 
@@ -137,6 +135,10 @@
 
 #pragma mark BMPPlayerListener
 - (void)onReady:(BMPReadyEvent *)event {
+    NSString *id = [[NSUserDefaults standardUserDefaults] stringForKey:@"RNBitmovinPlayer.subtitleId"];
+    NSLog(@"RNBitmovinPlayer.onReady - loading subtitle id %@", id);
+    [_player setSubtitleWithIdentifier:id];
+    
     _onReady(@{});
 }
 
@@ -216,6 +218,15 @@
 
 - (void)onControlsHide:(BMPControlsHideEvent *)event {
     _onControlsHide(@{});
+}
+
+- (void)onSubtitleChanged:(BMPSubtitleChangedEvent *)event {
+    BMPSubtitleTrack *track = event.subtitleTrackNew;
+    NSLog(@"RNBitmovinPlayer.onSubtitleChanged - saving subtitle label=%@ identifier=%@ language=%@",
+          track.label, track.identifier, track.language);
+    [[NSUserDefaults standardUserDefaults] setValue:track.identifier
+                                             forKey:@"RNBitmovinPlayer.subtitleId"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 @end
