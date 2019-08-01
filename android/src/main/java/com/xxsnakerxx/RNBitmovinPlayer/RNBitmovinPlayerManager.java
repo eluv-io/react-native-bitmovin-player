@@ -55,6 +55,9 @@ import com.bitmovin.player.config.media.SourceItem;
 import com.bitmovin.player.config.track.SubtitleTrack;
 import com.bitmovin.player.ui.FullscreenHandler;
 import com.bitmovin.player.ui.FullscreenUtil;
+import com.bitmovin.analytics.BitmovinAnalytics;
+import com.bitmovin.analytics.BitmovinAnalyticsConfig;
+import com.bitmovin.analytics.bitmovin.player.BitmovinPlayerCollector;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReadableMap;
@@ -256,6 +259,38 @@ public class RNBitmovinPlayerManager extends SimpleViewManager<BitmovinPlayerVie
             }
             configuration.setStyleConfiguration(styleConf);
         }
+
+        if (config.hasKey("analytics")) {
+            ReadableMap analyticsMap = config.getMap("analytics");
+            if(analyticsMap.hasKey("key")){
+                String key = analyticsMap.getString("key");
+                BitmovinAnalyticsConfig bitmovinAnalyticsConfig = new BitmovinAnalyticsConfig(key, _reactContext.getCurrentActivity());
+
+                if(analyticsMap.hasKey("videoId")){
+                  String videoId = analyticsMap.getString("videoId");
+                  bitmovinAnalyticsConfig.setVideoId(videoId);
+                }
+
+                if(analyticsMap.hasKey("title")){
+                  String title = analyticsMap.getString("title");
+                  bitmovinAnalyticsConfig.setTitle(title);
+                }
+                //bitmovinAnalyticsConfig.setCustomUserId("customUserId1");
+                //bitmovinAnalyticsConfig.setCdnProvider(CDNProvider.BITMOVIN);
+                //bitmovinAnalyticsConfig.setExperimentName("experiment-1");
+                //bitmovinAnalyticsConfig.setCustomData1("customData1");
+                //bitmovinAnalyticsConfig.setCustomData2("customData2");
+                //bitmovinAnalyticsConfig.setCustomData3("customData3");
+                //bitmovinAnalyticsConfig.setCustomData4("customData4");
+                //bitmovinAnalyticsConfig.setCustomData5("customData5");
+                //bitmovinAnalyticsConfig.setPath("/vod/new/");
+                //bitmovinAnalyticsConfig.setHeartbeatInterval(59700);
+
+                BitmovinPlayerCollector analyticsCollector = new BitmovinPlayerCollector(bitmovinAnalyticsConfig);
+                analyticsCollector.attachPlayer(_player);
+          }
+        }
+
 
         _player.setup(configuration);
 
